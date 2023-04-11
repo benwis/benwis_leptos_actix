@@ -539,7 +539,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
-name = "benwis_leptos"
+name = "benwis_leptos_actix"
 version = "0.1.0"
 dependencies = [
  "actix-files",
@@ -1807,6 +1807,7 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "leptos"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "cfg-if 1.0.0",
  "leptos_config",
@@ -1822,6 +1823,7 @@ dependencies = [
 [[package]]
 name = "leptos_actix"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "actix-web",
  "futures",
@@ -1832,12 +1834,12 @@ dependencies = [
  "parking_lot 0.12.1",
  "regex",
  "serde_json",
- "tracing",
 ]
 
 [[package]]
 name = "leptos_config"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "config",
  "regex",
@@ -1849,6 +1851,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "async-recursion",
  "cfg-if 1.0.0",
@@ -1875,6 +1878,7 @@ dependencies = [
 [[package]]
 name = "leptos_hot_reload"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "anyhow",
  "camino",
@@ -1891,18 +1895,19 @@ dependencies = [
 [[package]]
 name = "leptos_integration_utils"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "futures",
  "leptos",
  "leptos_config",
  "leptos_hot_reload",
  "leptos_meta",
- "tracing",
 ]
 
 [[package]]
 name = "leptos_macro"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "attribute-derive",
  "cfg-if 1.0.0",
@@ -1917,13 +1922,13 @@ dependencies = [
  "server_fn_macro",
  "syn 1.0.109",
  "syn-rsx",
- "tracing",
  "uuid",
 ]
 
 [[package]]
 name = "leptos_meta"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "cfg-if 1.0.0",
  "leptos",
@@ -1935,6 +1940,7 @@ dependencies = [
 [[package]]
 name = "leptos_reactive"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "base64 0.21.0",
  "cfg-if 1.0.0",
@@ -1958,6 +1964,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "cfg-if 1.0.0",
  "common_macros",
@@ -1982,13 +1989,13 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "lazy_static",
  "leptos_reactive",
  "serde",
  "server_fn",
  "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -2881,12 +2888,10 @@ dependencies = [
  "http",
  "http-body",
  "hyper",
- "hyper-tls",
  "ipnet",
  "js-sys",
  "log",
  "mime",
- "native-tls",
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
@@ -2894,7 +2899,6 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "tokio",
- "tokio-native-tls",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -3127,6 +3131,7 @@ dependencies = [
 [[package]]
 name = "server_fn"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "ciborium",
  "const_format",
@@ -3148,6 +3153,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "const_format",
  "proc-macro-error",
@@ -3161,6 +3167,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro_default"
 version = "0.2.5"
+source = "git+https://github.com/leptos-rs/leptos#683511f311e67ac979a4680ed1c01a0ee4272aa6"
 dependencies = [
  "server_fn_macro",
  "syn 1.0.109",

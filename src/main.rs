@@ -1,5 +1,5 @@
 use actix_web::web::Data;
-use benwis_leptos::telemetry::TracingSettings;
+use benwis_leptos_actix::telemetry::TracingSettings;
 use cfg_if::cfg_if;
 
 // boilerplate to run in different modes
@@ -11,8 +11,8 @@ if #[cfg(feature = "ssr")] {
     use actix_identity::IdentityMiddleware;
     use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 
-    use benwis_leptos::*;
-    use benwis_leptos::telemetry::{get_subscriber, get_subscriber_with_tracing, init_subscriber};
+    use benwis_leptos_actix::*;
+    use benwis_leptos_actix::telemetry::{get_subscriber, get_subscriber_with_tracing, init_subscriber};
 
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use leptos::{log, view, get_configuration};
@@ -58,8 +58,8 @@ if #[cfg(feature = "ssr")] {
 
         let tracing_conf = TracingSettings{ 
             honeycomb_team: Some("6yem4uKpKZQBMObm755EdA".to_string()), 
-            honeycomb_dataset: Some("benwis_leptos".to_string()), 
-            honeycomb_service_name: Some("benwis_leptos".to_string()) 
+            honeycomb_dataset: Some("benwis_leptos_actix".to_string()), 
+            honeycomb_service_name: Some("benwis_leptos_actix".to_string()) 
         };
 
         // Get telemetry layer
@@ -73,7 +73,7 @@ if #[cfg(feature = "ssr")] {
         } else {
             init_subscriber(
                 get_subscriber_with_tracing(
-                    "benwis_leptos".into(),
+                    "benwis_leptos_actix".into(),
                     &tracing_conf,
                     "INFO".into(),
                     std::io::stdout,

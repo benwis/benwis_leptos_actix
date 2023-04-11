@@ -1,5 +1,5 @@
 [package]
-name = "benwis_leptos"
+name = "benwis_leptos_actix"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,20 +15,20 @@ rand_core = { version = "0.6.4", features = ["std"], optional=true }
 console_error_panic_hook = "0.1.7"
 futures = "0.3.27"
 cfg-if = "1.0.0"
-# leptos = { git="https://github.com/leptos-rs/leptos", default-features = false, features = [
-# 	"serde", "tracing",
-# ] }
-# leptos_meta = { git="https://github.com/leptos-rs/leptos", default-features = false }
-# leptos_axum = { git="https://github.com/leptos-rs/leptos", optional = true }
-# leptos_router = {  git="https://github.com/leptos-rs/leptos", default-features = false }
-leptos = { path="../leptos/leptos", default-features = false, features = [
-	"serde", "tracing"
-] }
-leptos_meta = { path="../leptos/meta", default-features = false }
+ leptos = { git="https://github.com/leptos-rs/leptos", default-features = false, features = [
+ 	"serde", "tracing",
+ ] }
+ leptos_meta = { git="https://github.com/leptos-rs/leptos", default-features = false }
+ leptos_actix = { git="https://github.com/leptos-rs/leptos", optional = true }
+ leptos_router = {  git="https://github.com/leptos-rs/leptos", default-features = false }
+#leptos = { path="../leptos/leptos", default-features = false, features = [
+#	"serde", "tracing"
+#] }
+#leptos_meta = { path="../leptos/meta", default-features = false }
 # leptos_axum = { path="../leptos/integrations/axum", optional = true }
-leptos_actix= { path="../leptos/integrations/actix", optional = true }
+#leptos_actix= { path="../leptos/integrations/actix", optional = true }
 
-leptos_router = {  path="../leptos/router", default-features = false }
+#leptos_router = {  path="../leptos/router", default-features = false }
 log = "0.4.17"
 simple_logger = "4.1.0"
 serde = { version = "1.0.158", features = ["derive"] }
@@ -91,7 +91,7 @@ skip_feature_sets = [["csr", "ssr"], ["csr", "hydrate"], ["ssr", "hydrate"]]
 
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
-output-name = "benwis_leptos"
+output-name = "benwis_leptos_actix"
 # The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
 site-root = "target/site"
 # The site-root relative folder where all compiled output (JS, WASM and CSS) is written
