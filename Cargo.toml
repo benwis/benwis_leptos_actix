@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0.70"
+broadcaster = "1.0.0"
 console_log = "1.0.0"
 rand = { version = "0.8.5", features = ["min_const_gen"], optional = true }
 rand_core = { version = "0.6.4", features = ["std"], optional=true }
@@ -24,32 +25,34 @@ leptos = { path="../leptos/leptos", default-features = false, features = [
 	"serde", "tracing"
 ] }
 leptos_meta = { path="../leptos/meta", default-features = false }
-leptos_axum = { path="../leptos/integrations/axum", optional = true }
+# leptos_axum = { path="../leptos/integrations/axum", optional = true }
+leptos_actix= { path="../leptos/integrations/actix", optional = true }
+
 leptos_router = {  path="../leptos/router", default-features = false }
 log = "0.4.17"
 simple_logger = "4.1.0"
 serde = { version = "1.0.158", features = ["derive"] }
-axum = { version = "0.6.11", optional = true }
-tower = { version = "0.4.13", optional = true }
-tower-http = { version = "0.4.0", features = ["compression-gzip", "fs", "trace"], optional=true }
+# axum = { version = "0.6.11", optional = true }
+# tower = { version = "0.4.13", optional = true }
+# tower-http = { version = "0.4.0", features = ["compression-gzip", "fs", "trace"], optional=true }
 tokio = { version = "1.26.0", features = ["full"], optional = true }
-http = "0.2.9"
+# http = "0.2.9"
 sqlx = { version = "0.6.2", features = [
 	"runtime-tokio-rustls",
 	"sqlite",
 ], optional = true }
 thiserror = "1.0.40"
 wasm-bindgen = "0.2.84"
-axum_sessions_auth = { version = "7.0.0", features = [
-	"sqlite-rustls",
-], optional = true }
-axum_database_sessions = { version = "7.0.0", features = [
-	"sqlite-rustls",
-], optional = true }
+# axum_sessions_auth = { version = "7.0.0", features = [
+# 	"sqlite-rustls",
+# ], optional = true }
+# axum_database_sessions = { version = "7.0.0", features = [
+# 	"sqlite-rustls",
+# ], optional = true }
 argon2 = {version="0.4.1", optional = true }
 async-trait = { version = "0.1.67", optional = true }
 miette = "5.6.0"
-axum-extra = { version = "0.7.1", features = ["cookie"] }
+# axum-extra = { version = "0.7.1", features = ["cookie"] }
 web-sys = { version = "0.3.61", features = ["HtmlDocument"] }
 femark = { version="0.1.3", optional = true }
 slug = "0.1.4"
@@ -69,13 +72,18 @@ tokio-native-tls = {version="0.3.1", optional=true}
 native-tls = {version="0.2.11", features=["alpn"], optional=true}
 hyper = {version="0.14.25", optional=true}
 tracing-logfmt = {version="0.3.1", optional=true}
+actix-files = { version = "0.6.2", optional = true }
+actix-web = { version = "4.2.1", optional = true, features = ["macros"] }
+actix-identity = {version="0.5.2", optional=true}
+actix-session = {version="0.7.2", features=["cookie-session"], optional=true}
+http = "0.2.9"
 
 
 [features]
 default = ["csr"]
 csr = ["leptos/csr", "leptos_meta/csr", "leptos_router/csr"]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
-ssr = ["dep:axum", "dep:hyper", "dep:tower","dep:tracing-logfmt", "dep:hyper-tls", "dep:tokio-native-tls", "dep:native-tls", "dep:dotenvy", "dep:tracing-futures", "dep:tracing-subscriber", "dep:tracing-bunyan-formatter", "dep:tracing-log", "dep:opentelemetry", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry", "dep:tonic", "dep:tokio", "dep:tower-http", "dep:axum_sessions_auth", "dep:axum_database_sessions", "dep:async-trait", "dep:sqlx", "dep:argon2", "dep:femark", "dep:rand", "dep:rand_core", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum", "dep:chrono"]
+ssr = ["dep:actix-files","dep:actix-identity","dep:actix-session", "dep:actix-web", "dep:tracing-logfmt", "dep:hyper","dep:hyper-tls", "dep:tokio-native-tls", "dep:native-tls", "dep:dotenvy", "dep:tracing-futures", "dep:tracing-subscriber", "dep:tracing-bunyan-formatter", "dep:tracing-log", "dep:opentelemetry", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry", "dep:tonic", "dep:tokio", "dep:async-trait", "dep:sqlx", "dep:argon2", "dep:femark", "dep:rand", "dep:rand_core", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_actix", "dep:chrono"]
 
 [package.metadata.cargo-all-features]
 denylist = ["axum", "tower", "tower-http", "tokio", "sqlx", "leptos_axum", "femark", "chrono", "argon2","rand", "rand_core"]

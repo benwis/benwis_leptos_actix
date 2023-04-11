@@ -1,58 +1,48 @@
+use actix_web::web::Data;
 use benwis_leptos::telemetry::TracingSettings;
 use cfg_if::cfg_if;
 
 // boilerplate to run in different modes
 cfg_if! {
 if #[cfg(feature = "ssr")] {
-    use axum::{
-        response::{Response, IntoResponse},
-        routing::{post, get},
-        extract::{Path, Extension, RawQuery},
-        http::{Request, header::HeaderMap},
-        body::Body as AxumBody,
-        Router,
-    };
-    use tower_http::trace::TraceLayer;
+    use actix_files::{Files};
+    use actix_web::*;
+    use actix_web::{cookie::Key, web, App, HttpServer, HttpResponse, Error};
+    use actix_identity::IdentityMiddleware;
+    use actix_session::{storage::CookieSessionStore, SessionMiddleware};
+
     use benwis_leptos::*;
-    use benwis_leptos::fallback::file_and_error_handler;
     use benwis_leptos::telemetry::{get_subscriber, get_subscriber_with_tracing, init_subscriber};
 
-    use leptos_axum::{generate_route_list, LeptosRoutes, handle_server_fns_with_context};
-    use leptos::{log, view, provide_context, LeptosOptions, get_configuration};
-    use std::{sync::Arc, env};
-    use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
-    use axum_database_sessions::{SessionConfig, SessionLayer, SessionStore};
-    use axum_sessions_auth::{AuthSessionLayer, AuthConfig, SessionSqlitePool};
-    use crate::functions::auth::{AuthSession};
+    use leptos_actix::{generate_route_list, LeptosRoutes};
+    use leptos::{log, view, get_configuration};
+    use std::{ env};
+    use sqlx::{sqlite::SqlitePoolOptions};
     use crate::app::*;
-    use crate::models::User;
-    use tower_http::{compression::CompressionLayer};
 
-    #[tracing::instrument(level = "info", fields(error))]
-    async fn server_fn_handler(Extension(pool): Extension<SqlitePool>, query: RawQuery, auth_session: AuthSession, path: Path<String>, headers: HeaderMap, request: Request<AxumBody>) -> impl IntoResponse {
+    // #[tracing::instrument(level = "info", fields(error))]
+    // async fn server_fn_handler() -> actix_web::Route {
 
-        log!("{:?}", path);
+    //     leptos_actix::handle_server_fns_with_context( move |cx| {
+    //         provide_context(cx, auth_session.clone());
+    //         provide_context(cx, pool.clone());
+    //     }).await
+    // }
 
-        handle_server_fns_with_context(path, headers, query, move |cx| {
-            provide_context(cx, auth_session.clone());
-            provide_context(cx, pool.clone());
-        }, request).await
-    }
+    // #[tracing::instrument(level = "info", fields(error))]
+    // async fn leptos_routes_handler() -> actix_web::Route{
+    //         let handler = leptos_actix::render_app_to_stream_with_context((*options).clone(),
+    //         move |cx| {
+    //             provide_context(cx, auth_session.clone());
+    //             provide_context(cx, pool.clone());
+    //         },
+    //         |cx| view! { cx, <BenwisApp/> }
+    //     );
+    //     handler(req).await.into_response()
+    // }
 
-    #[tracing::instrument(level = "info", fields(error))]
-    async fn leptos_routes_handler(Extension(pool): Extension<SqlitePool>, auth_session: AuthSession, Extension(options): Extension<Arc<LeptosOptions>>, req: Request<AxumBody>) -> Response{
-            let handler = leptos_axum::render_app_to_stream_with_context((*options).clone(),
-            move |cx| {
-                provide_context(cx, auth_session.clone());
-                provide_context(cx, pool.clone());
-            },
-            |cx| view! { cx, <BenwisApp/> }
-        );
-        handler(req).await.into_response()
-    }
-
-    #[tokio::main]
-    async fn main() {
+    #[actix_web::main]    
+    async fn main() -> std::io::Result<()> {
         // Load .env file if one is present(should only happen in local dev)
         dotenvy::dotenv().ok();
 
@@ -92,12 +82,15 @@ if #[cfg(feature = "ssr")] {
             );
         }
 
-        // Auth section
-        let session_config = SessionConfig::default().with_table_name("axum_sessions");
-        let auth_config = AuthConfig::<i64>::default();
-        let session_store = SessionStore::<SessionSqlitePool>::new(Some(pool.clone().into()), session_config);
-        session_store.initiate().await.unwrap();
+        // The secret key would usually be read from a configuration file/environment variables.
+        fn get_secret_key() -> Key {
+            let session_secret = env::var("SESSION_SECRET").expect("SESSION_SECRET env var must be set!");
+            // println!("SECRET: {:#?}", Key::generate());
+            Key::from(session_secret.as_bytes())
 
+        }
+        let secret_key = get_secret_key();
+          
         sqlx::migrate!()
             .run(&pool)
             .await
@@ -107,30 +100,54 @@ if #[cfg(feature = "ssr")] {
 
         // Setting this to None means we'll be using cargo-leptos and its env vars
         let conf = get_configuration(None).await.unwrap();
-        let leptos_options = conf.leptos_options;
-        let addr = leptos_options.site_addr;
-        let routes = generate_route_list(|cx| view! { cx, <BenwisApp/> }).await;
+        let routes = generate_route_list(|cx| view! { cx, <BenwisApp/> });
+        let addr = conf.leptos_options.site_addr.clone();
 
         // build our application with a route
-        let app = Router::new()
-        .route("/api/*fn_name", post(server_fn_handler))
-        .leptos_routes_with_handler(routes, get(leptos_routes_handler) )
-        .fallback(file_and_error_handler)
-        .layer(TraceLayer::new_for_http())
-        .layer(AuthSessionLayer::<User, i64, SessionSqlitePool, SqlitePool>::new(Some(pool.clone()))
-            .with_config(auth_config))
-        .layer(SessionLayer::new(session_store))
-        .layer(Extension(Arc::new(leptos_options)))
-        .layer(Extension(pool))
-        .layer(CompressionLayer::new());
+        // let app = Router::new()
+        // .route("/api/*fn_name", post(server_fn_handler))
+        // .leptos_routes_with_handler(routes, get(leptos_routes_handler) )
+        // .fallback(file_and_error_handler)
+        // .layer(TraceLayer::new_for_http())
+        // .layer(AuthSessionLayer::<User, i64, SessionSqlitePool, SqlitePool>::new(Some(pool.clone()))
+        //     .with_config(auth_config))
+        // .layer(SessionLayer::new(session_store))
+        // .layer(Extension(Arc::new(leptos_options)))
+        // .layer(Extension(pool))
+        // .layer(CompressionLayer::new());
 
-        // run our app with hyper
-        // `axum::Server` is a re-export of `hyper::Server`
-        log!("listening on http://{}", &addr);
-        axum::Server::bind(&addr)
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
+        // // run our app with hyper
+        // // `axum::Server` is a re-export of `hyper::Server`
+        // log!("listening on http://{}", &addr);
+        // axum::Server::bind(&addr)
+        //     .serve(app.into_make_service())
+        //     .await
+        //     .unwrap();
+
+        HttpServer::new(move || {
+            let leptos_options = &conf.leptos_options;
+            let site_root = &leptos_options.site_root;
+            let routes = &routes;
+
+
+            App::new()
+                // .service(css)
+                .app_data(Data::new(pool.clone()))
+                .route("/api/{tail:.*}", leptos_actix::handle_server_fns())
+                .leptos_routes(leptos_options.to_owned(), routes.to_owned(), |cx| view! { cx, <BenwisApp/> })
+                .service(Files::new("/", &site_root))
+                .wrap(middleware::Compress::default())
+                  // Install the identity framework first.
+                .wrap(IdentityMiddleware::default())
+                // The identity system is built on top of sessions. You must install the session
+                // middleware to leverage `actix-identity`. The session middleware must be mounted
+                // AFTER the identity middleware: `actix-web` invokes middleware in the OPPOSITE
+                // order of registration when it receives an incoming request.
+                .wrap(SessionMiddleware::new(CookieSessionStore::default(), secret_key.clone()))
+        })
+        .bind(addr)?
+        .run()
+        .await
     }
 }
 

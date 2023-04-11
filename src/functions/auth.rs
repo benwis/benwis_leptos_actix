@@ -4,16 +4,17 @@ use leptos::*;
 cfg_if! {
 if #[cfg(feature = "ssr")] {
     use sqlx::SqlitePool;
-    use axum_sessions_auth::{SessionSqlitePool, Authentication, HasPermission};
     use argon2::{
         password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
         Argon2,
-    };    use crate::functions::{pool, auth};
-    pub type AuthSession = axum_sessions_auth::AuthSession<User, i64, SessionSqlitePool, SqlitePool>;
+    };    
+    use crate::functions::{pool, identity};
     use async_trait::async_trait;
     use crate::models::User;
     use crate::errors::BenwisAppError;
     use rand_core::OsRng;
+    use actix_identity::Identity;
+    use actix_web::HttpMessage;
 
     /// Hash Argon2 password
     pub fn hash_password(password: &[u8]) -> Result<String, BenwisAppError> {
@@ -30,40 +31,40 @@ if #[cfg(feature = "ssr")] {
         Ok(argon2.verify_password(password2.as_bytes(), &parsed_hash)?)
     }
 
-    #[derive(sqlx::FromRow,Debug, Clone)]
-    pub struct SqlPermissionTokens {
-        pub token: String,
-    }
+    // #[derive(sqlx::FromRow,Debug, Clone)]
+    // pub struct SqlPermissionTokens {
+    //     pub token: String,
+    // }
 
-    #[async_trait]
-    impl Authentication<User, i64, SqlitePool> for User {
-        async fn load_user(userid: i64, pool: Option<&SqlitePool>) -> Result<User, anyhow::Error> {
-            let pool = pool.unwrap();
+    // #[async_trait]
+    // impl Authentication<User, i64, SqlitePool> for User {
+    //     async fn load_user(userid: i64, pool: Option<&SqlitePool>) -> Result<User, anyhow::Error> {
+    //         let pool = pool.unwrap();
 
-            User::get(userid, pool)
-                .await
-                .ok_or_else(|| anyhow::anyhow!("Cannot get user"))
-        }
+    //         User::get(userid, pool)
+    //             .await
+    //             .ok_or_else(|| anyhow::anyhow!("Cannot get user"))
+    //     }
 
-        fn is_authenticated(&self) -> bool {
-            true
-        }
+    //     fn is_authenticated(&self) -> bool {
+    //         true
+    //     }
 
-        fn is_active(&self) -> bool {
-            true
-        }
+    //     fn is_active(&self) -> bool {
+    //         true
+    //     }
 
-        fn is_anonymous(&self) -> bool {
-            false
-        }
-    }
+    //     fn is_anonymous(&self) -> bool {
+    //         false
+    //     }
+    // }
 
-    #[async_trait]
-    impl HasPermission<SqlitePool> for User {
-        async fn has(&self, perm: &str, _pool: &Option<&SqlitePool>) -> bool {
-            self.permissions.contains(perm)
-        }
-    }
+    // #[async_trait]
+    // impl HasPermission<SqlitePool> for User {
+    //     async fn has(&self, perm: &str, _pool: &Option<&SqlitePool>) -> bool {
+    //         self.permissions.contains(perm)
+    //     }
+    // }
 }
 }
 
@@ -75,8 +76,10 @@ pub async fn login(
     password: String,
     remember: Option<String>,
 ) -> Result<(), ServerFnError> {
-    let pool = pool(cx)?;
-    let auth = auth(cx)?;
+    let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Ok(())
+    };
+    let pool = pool(cx, &req)?;
 
     let user: User = User::get_from_username(username, &pool)
         .await
@@ -87,9 +90,10 @@ pub async fn login(
         .map_err(|e| ServerFnError::ServerError(e.to_string()))
     {
         Ok(_) => {
-            auth.login_user(user.id);
-            auth.remember_user(remember.is_some());
-            leptos_axum::redirect(cx, "/");
+            // auth.login_user(user.id);
+            // auth.remember_user(remember.is_some());
+            Identity::login(&req.extensions(), user.id.to_string()).unwrap();
+            leptos_actix::redirect(cx, "/");
             Ok(())
         }
         Err(_) => Err(ServerFnError::ServerError(
@@ -108,8 +112,10 @@ pub async fn signup(
     password_confirmation: String,
     remember: Option<String>,
 ) -> Result<(), ServerFnError> {
-    let pool = pool(cx)?;
-    let auth = auth(cx)?;
+    let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Ok(())
+    };
+    let pool = pool(cx, &req)?;
 
     if password != password_confirmation {
         return Err(ServerFnError::ServerError(
@@ -118,7 +124,7 @@ pub async fn signup(
     }
     // Don't want anyone signing up but me!
     if username != "benwis" {
-        leptos_axum::redirect(cx, "/nedry");
+        leptos_actix::redirect(cx, "/nedry");
         return Ok(());
     }
 
@@ -137,10 +143,12 @@ pub async fn signup(
         .ok_or("Signup failed: User does not exist.")
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
-    auth.login_user(user.id);
-    auth.remember_user(remember.is_some());
+    Identity::login(&req.extensions(), user.id.to_string()).unwrap();
 
-    leptos_axum::redirect(cx, "/");
+    // auth.login_user(user.id);
+    // auth.remember_user(remember.is_some());
+
+    leptos_actix::redirect(cx, "/");
 
     Ok(())
 }
@@ -148,10 +156,14 @@ pub async fn signup(
 #[tracing::instrument(level = "info", fields(error), ret,err)]
 #[server(Logout, "/api")]
 pub async fn logout(cx: Scope) -> Result<(), ServerFnError> {
-    let auth = auth(cx)?;
+    let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Ok(())
+    };
 
-    auth.logout_user();
-    leptos_axum::redirect(cx, "/");
+    let identity = identity(cx,&req)?;
+
+    identity.logout();
+    leptos_actix::redirect(cx, "/");
 
     Ok(())
 }

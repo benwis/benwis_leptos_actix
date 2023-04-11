@@ -12,15 +12,15 @@ fn initial_prefers_dark(_cx: Scope) -> bool {
 
 #[cfg(feature = "ssr")]
 fn initial_prefers_dark(cx: Scope) -> bool {
-    use axum_extra::extract::cookie::CookieJar;
-    use_context::<leptos_axum::RequestParts>(cx)
+    use_context::<actix_web::HttpRequest>(cx)
         .and_then(|req| {
-            let cookies = CookieJar::from_headers(&req.headers);
-            cookies.get("darkmode").and_then(|v| match v.value() {
-                "true" => Some(true),
-                "false" => Some(false),
-                _ => None,
-            })
+            req.cookies()
+                .map(|cookies| {
+                    cookies
+                        .iter()
+                        .any(|cookie| cookie.name() == "darkmode" && cookie.value() == "true")
+                })
+                .ok()
         })
         .unwrap_or(false)
 }

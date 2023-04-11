@@ -1,6 +1,5 @@
 use cfg_if::cfg_if;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
@@ -12,12 +11,10 @@ pub struct User {
     pub created_at_pretty: String,
     pub updated_at: i64,
     pub updated_at_pretty: String,
-    pub permissions: HashSet<String>,
 }
 
 impl Default for User {
     fn default() -> Self {
-        let permissions = HashSet::new();
 
         Self {
             id: -1,
@@ -27,7 +24,6 @@ impl Default for User {
             updated_at: 0,
             updated_at_pretty: "".to_string(),
             password: "".into(),
-            permissions,
             display_name: "Guest".into(),
         }
     }
@@ -68,7 +64,6 @@ impl From<User> for SafeUser {
 cfg_if! {
 if #[cfg(feature = "ssr")] {
     use sqlx::SqlitePool;
-    use crate::functions::auth::SqlPermissionTokens;
     use chrono::naive::NaiveDateTime;
 
 
@@ -84,7 +79,7 @@ pub struct SqlUser {
 
 impl SqlUser {
     #[tracing::instrument(level = "info", fields(error))]
-    pub fn into_user(self, sql_user_perms: Option<Vec<SqlPermissionTokens>>) -> User {
+    pub fn into_user(self) -> User {
         User {
             id: self.id,
             username: self.username,
@@ -94,15 +89,6 @@ impl SqlUser {
             created_at_pretty: NaiveDateTime::from_timestamp_opt(self.created_at, 0).unwrap_or_default().to_string(),
             updated_at: self.updated_at,
             updated_at_pretty: NaiveDateTime::from_timestamp_opt(self.created_at, 0).unwrap_or_default().to_string(),
-
-            permissions: if let Some(user_perms) = sql_user_perms {
-                user_perms
-                    .into_iter()
-                    .map(|x| x.token)
-                    .collect::<HashSet<String>>()
-            } else {
-                HashSet::<String>::new()
-            },
         }
     }
 }
@@ -116,16 +102,7 @@ impl SqlUser {
                 .await
                 .ok()?;
 
-            //lets just get all the tokens the user can use, we will only use the full permissions if modifing them.
-            let sql_user_perms = sqlx::query_as::<_, SqlPermissionTokens>(
-                "SELECT token FROM user_permissions WHERE user_id = ?;",
-            )
-            .bind(id)
-            .fetch_all(pool)
-            .await
-            .ok()?;
-
-            Some(sqluser.into_user(Some(sql_user_perms)))
+            Some(sqluser.into_user())
         }
 
         #[tracing::instrument(level = "info", fields(error))]
@@ -136,16 +113,7 @@ impl SqlUser {
                 .await
                 .ok()?;
 
-            //lets just get all the tokens the user can use, we will only use the full permissions if modifing them.
-            let sql_user_perms = sqlx::query_as::<_, SqlPermissionTokens>(
-                "SELECT token FROM user_permissions WHERE user_id = ?;",
-            )
-            .bind(sqluser.id)
-            .fetch_all(pool)
-            .await
-            .ok()?;
-
-            Some(sqluser.into_user(Some(sql_user_perms)))
+            Some(sqluser.into_user())
         }
     }
     impl SafeUser {
@@ -157,16 +125,7 @@ impl SqlUser {
                 .await
                 .ok()?;
 
-            //lets just get all the tokens the user can use, we will only use the full permissions if modifing them.
-            let sql_user_perms = sqlx::query_as::<_, SqlPermissionTokens>(
-                "SELECT token FROM user_permissions WHERE user_id = ?;",
-            )
-            .bind(id)
-            .fetch_all(pool)
-            .await
-            .ok()?;
-
-            Some(sqluser.into_user(Some(sql_user_perms)).into())
+            Some(sqluser.into_user().into())
         }
 
         pub async fn get_from_username(name: String, pool: &SqlitePool) -> Option<Self> {
@@ -176,16 +135,7 @@ impl SqlUser {
                 .await
                 .ok()?;
 
-            //lets just get all the tokens the user can use, we will only use the full permissions if modifing them.
-            let sql_user_perms = sqlx::query_as::<_, SqlPermissionTokens>(
-                "SELECT token FROM user_permissions WHERE user_id = ?;",
-            )
-            .bind(sqluser.id)
-            .fetch_all(pool)
-            .await
-            .ok()?;
-
-            Some(sqluser.into_user(Some(sql_user_perms)).into())
+            Some(sqluser.into_user().into())
         }
     }
 }

@@ -4,9 +4,9 @@ use leptos::*;
 
 cfg_if! {
 if #[cfg(feature = "ssr")] {
-    use crate::functions::{pool, auth};
+    use crate::functions::{pool, identity};
     use slug::slugify;
-    use leptos_axum::redirect;
+    use leptos_actix::redirect;
     use chrono::{NaiveDateTime, prelude::*};
 }}
 
@@ -22,13 +22,18 @@ pub async fn add_post(
     published: String,
     preview: String,
 ) -> Result<(), ServerFnError> {
-    let pool = pool(cx)?;
-    let auth = auth(cx)?;
+    
+ let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Err(ServerFnError::MissingArg("Failed to get the Request".to_string()))
+    };
+    let pool = pool(cx, &req)?;
+
 
     // Redirect all non logged in users to Nedry!
-    if auth.is_anonymous() {
-        redirect(cx, "/nedry")
-    }
+    let Ok(identity) = identity(cx,&req) else{
+        redirect(cx, "/nedry");
+        return Err(ServerFnError::ServerError("Only users are allowed to post!".to_string()))
+    };
 
     let published = published.parse::<bool>().unwrap();
     let preview = preview.parse::<bool>().unwrap();
@@ -75,7 +80,10 @@ pub async fn add_post(
 #[server(GetPosts, "/api")]
 pub async fn get_posts(cx: Scope) -> Result<Vec<Post>, ServerFnError> {
     use futures::TryStreamExt;
-    let pool = pool(cx)?;
+    let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Err(ServerFnError::MissingArg("Failed to get the Request".to_string()))
+    };
+    let pool = pool(cx, &req)?;
 
     let mut posts = Vec::new();
     let mut rows = sqlx::query_as::<_, SqlPost>("SELECT * FROM posts").fetch(&pool);
@@ -107,8 +115,10 @@ pub async fn get_posts(cx: Scope) -> Result<Vec<Post>, ServerFnError> {
 #[server(GetSomePosts, "/api")]
 pub async fn get_some_posts(cx: Scope) -> Result<Vec<Post>, ServerFnError> {
     use futures::TryStreamExt;
-    let pool = pool(cx)?;
-
+ let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Err(ServerFnError::MissingArg("Failed to get the Request".to_string()))
+    };
+    let pool = pool(cx, &req)?;
     let mut posts = Vec::new();
     let mut rows =
         sqlx::query_as::<_, SqlPost>("SELECT * FROM posts ORDER by created_at DESC limit 3")
@@ -141,7 +151,10 @@ pub async fn get_some_posts(cx: Scope) -> Result<Vec<Post>, ServerFnError> {
 #[server(GetSomePostsMeta, "/api")]
 pub async fn get_some_posts_meta(cx: Scope) -> Result<Vec<PostMeta>, ServerFnError> {
     use futures::TryStreamExt;
-    let pool = pool(cx)?;
+ let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Err(ServerFnError::MissingArg("Failed to get the Request".to_string()))
+    };
+    let pool = pool(cx, &req)?;
 
     let mut posts = Vec::new();
     let mut rows =
@@ -178,7 +191,10 @@ pub async fn get_post(
     cx: Scope,
     slug: String,
 ) -> Result<Result<Option<Post>, BenwisAppError>, ServerFnError> {
-    let pool = pool(cx)?;
+ let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Err(ServerFnError::MissingArg("Failed to get the Request".to_string()))
+    };
+    let pool = pool(cx, &req)?;
 
     let post = sqlx::query_as::<_, SqlPost>("SELECT * FROM posts WHERE slug=?")
         .bind(slug)
@@ -206,13 +222,17 @@ pub async fn update_post(
     published: String,
     preview: String,
 ) -> Result<Result<bool, BenwisAppError>, ServerFnError> {
-    let pool = pool(cx)?;
-    let auth = auth(cx)?;
+   
+    let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Ok(Ok(false))
+    };
+    let pool = pool(cx, &req)?;
 
     // Redirect all non logged in users to Nedry!
-    if auth.is_anonymous() {
-        redirect(cx, "/nedry")
-    }
+    let Ok(identity) = identity(cx,&req) else{
+        redirect(cx, "/nedry");
+        return Err(ServerFnError::ServerError("Only users are allowed to post!".to_string()))
+    };
 
     let published = published.parse::<bool>().unwrap();
     let preview = preview.parse::<bool>().unwrap();
@@ -242,13 +262,17 @@ pub async fn update_post(
 #[tracing::instrument(level = "info", fields(error), ret,err)]
 #[server(DeletePost, "/api")]
 pub async fn delete_post(cx: Scope, id: u16) -> Result<(), ServerFnError> {
-    let pool = pool(cx)?;
-    let auth = auth(cx)?;
+ let Some(req) = use_context::<actix_web::HttpRequest>(cx) else{
+        return Err(ServerFnError::MissingArg("Failed to get the Request".to_string()))
+    };
+    let pool = pool(cx, &req)?;
+
 
     // Redirect all non logged in users to Nedry!
-    if auth.is_anonymous() {
-        redirect(cx, "/nedry")
-    }
+    let Ok(identity) = identity(cx,&req) else{
+        redirect(cx, "/nedry");
+        return Err(ServerFnError::ServerError("Only users are allowed to post!".to_string()))
+    };
 
     sqlx::query("DELETE FROM posts WHERE id = $1")
         .bind(id)

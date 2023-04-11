@@ -3,7 +3,7 @@ use cfg_if::cfg_if;
 use leptos::{Errors, *};
 
 #[cfg(feature = "ssr")]
-use leptos_axum::ResponseOptions;
+use leptos_actix::ResponseOptions;
 
 // A basic function to display errors served by the error boundaries. Feel free to do more complicated things
 // here than just displaying them
